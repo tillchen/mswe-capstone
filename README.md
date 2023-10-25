@@ -12,7 +12,17 @@
 
 * Overview of the desired impact: The goal is to create a specialized software solution for the team that will automate and simplify the document creation process. This will notably cut down on time spent on formatting, while also guaranteeing that the end products are consistently formatted and professional in appearance.
 
-We call our software "AutoGranter"
+We call our software "AutoGranter".
+
+## How to run the script
+
+```sh
+pip install virtualenv
+virtualenv myenv
+pip install -r requirements.txt
+# When you are done, deactivate
+deactivate
+```
 
 ## Tech Stack
 

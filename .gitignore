@@ -21,4 +21,5 @@ data/
 *.xlsx
 
 # Ignore other files that should not be committed (e.g., passwords, keys)
+*.env
 secrets.yaml
