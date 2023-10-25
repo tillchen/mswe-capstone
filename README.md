@@ -16,10 +16,21 @@ We call our software "AutoGranter".
 
 ## How to run the script
 
+First time:
+
 ```sh
 pip install virtualenv
 virtualenv myenv
+source myenv/bin/activate
 pip install -r requirements.txt
+# When you are done, deactivate
+deactivate
+```
+
+After first use:
+
+```sh
+source myenv/bin/activate
 # When you are done, deactivate
 deactivate
 ```
