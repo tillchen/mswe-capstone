@@ -17,7 +17,6 @@ __pycache__/
 
 # Ignore data files or folders (adjust as needed)
 data/
-*.csv
 *.xlsx
 
 # Ignore other files that should not be committed (e.g., passwords, keys)
