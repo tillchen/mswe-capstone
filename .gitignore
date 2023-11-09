@@ -22,3 +22,5 @@ data/
 # Ignore other files that should not be committed (e.g., passwords, keys)
 *.env
 secrets.yaml
+apikey.txt
+.DS_Store
