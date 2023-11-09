@@ -4,6 +4,9 @@ from docx import Document
 import re
 from docx.shared import RGBColor
 import docx.oxml as oxml
+import openai
+
+API_KEY_FILE = 'apikey.txt'
 
 # 1. read csv file
 def read_csv_file(file_path):
@@ -53,6 +56,7 @@ def df_to_word(data_frame, file_path):
 
 # 3. format the word file
 def format_word_file(input_file_path, output_file_path):
+    get_api_key()
     # Load the Word document
     doc = Document(input_file_path)
 
@@ -80,11 +84,49 @@ def format_word_file(input_file_path, output_file_path):
                 elif header == "Deadline":
                     formatted_text += f"Due Date: {value}\n"
                 elif header == "Amount":
-                    formatted_text += f"Award Amount: {value}\n"
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",  # Specify the chat model
+                        messages=[
+                            {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                            {"role": "user", "content": f"Summarize the following text by extracting award amount in"
+                                                        f"USD. Is amount upper exists, just use that number is enough."
+                                                        f"Do not include any notes or explanations:\n\n{value}"}
+                        ],
+                        max_tokens=150,  # Set the maximum length for the summary
+                        temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+                    )
+                    # The response format is different for chat completions
+                    summary = response['choices'][0]['message']['content'].strip()
+                    print(f'extracted amount {summary}')
+                    formatted_text += f"Award Amount: {summary}\n"
                 elif header == "Eligibility":
-                    formatted_text += f"Eligibility: {value}\n"
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",  # Specify the chat model
+                        messages=[
+                            {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                            {"role": "user", "content": f"Summarize the following text by extracting which level "
+                                                        f"of faculty is eligible. If the level is not mentioned, "
+                                                        f"simply return Any level faculty:\n\n{value}"}
+                        ],
+                        max_tokens=150,  # Set the maximum length for the summary
+                        temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+                    )
+                    # The response format is different for chat completions
+                    summary = response['choices'][0]['message']['content'].strip()
+                    formatted_text += f"Eligibility: {summary}\n"
                 elif header == "Abstract":
-                    formatted_text += f"Program Goal: {value}\n"
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",  # Specify the chat model
+                        messages=[
+                            {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                            {"role": "user", "content": f"Summarize the following text in a concise way:\n\n{value}"}
+                        ],
+                        max_tokens=150,  # Set the maximum length for the summary
+                        temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+                    )
+                    # The response format is different for chat completions
+                    summary = response['choices'][0]['message']['content'].strip()
+                    formatted_text += f"Program Goal: {summary}\n"
                 elif header == "More Information":
                     more_information_link = value
             # Add the formatted text to the new Word document
@@ -120,6 +162,11 @@ def add_hyperlink(paragraph, url, text):
     r._r.append(hyperlink)
 
     return r
+
+def get_api_key():
+    with open(API_KEY_FILE, 'r') as file:
+        openai.api_key = file.read().strip()
+
 
 if __name__ == "__main__":
     # 1. read csv file

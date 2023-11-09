@@ -27,6 +27,8 @@ pip install -r requirements.txt
 deactivate
 ```
 
+Also add the file `apikey.txt` to the root directory of the project with the OpenAI API key inside.
+
 After first use:
 
 ```sh
