@@ -5,6 +5,7 @@ import re
 from docx.shared import RGBColor
 import docx.oxml as oxml
 import openai
+from datetime import datetime
 
 API_KEY_FILE = 'apikey.txt'
 
@@ -16,6 +17,8 @@ def read_csv_file(file_path):
         # Keep only the specified fields (columns)
         fields = ["Title", "Funder", "Deadline", "Amount", "Eligibility", "Abstract", "More Information"]
         filtered_df = df[fields]
+        # remove html tag in each cell
+        filtered_df = filtered_df.map(remove_html_tag)
         # Return the DataFrame
         return filtered_df
     except FileNotFoundError:
@@ -28,117 +31,117 @@ def read_csv_file(file_path):
         print(f"An error occurred: {e}")
         return None
 
-# 2. convert the csv file to word file
-def df_to_word(data_frame, file_path):
-    # Create a new Word document
-    doc = Document()
+def remove_html_tag(value):
+    if not isinstance(value, str):
+        value = str(value)
+    value = re.sub(r"<[^>]*>", "", value)
+    return value
 
-    # Add a table to the document with the same number of columns as the DataFrame
-    table = doc.add_table(rows=1, cols=len(data_frame.columns))
-
-    # Get the cells of the header row in the table
-    hdr_cells = table.rows[0].cells
-
-    # Fill in the header row with the column names of the DataFrame
-    for i, column_name in enumerate(data_frame.columns):
-        hdr_cells[i].text = column_name
-
-    # Loop over each row in the DataFrame
-    for index, row in data_frame.iterrows():
-        # Add a new row to the table
-        row_cells = table.add_row().cells
-        # Fill in the cells of the row with the values from the DataFrame
-        for i, value in enumerate(row):
-            row_cells[i].text = str(value)
-
-    # Save the Word document to the specified file path
-    doc.save(file_path)
-
-# 3. format the word file
-def format_word_file(input_file_path, output_file_path):
+# 2. convert csv file to word file and format word file
+def format_word_file(data_frame, output_file_path):
     get_api_key()
-    # Load the Word document
-    doc = Document(input_file_path)
 
     # Create a new Word document for the formatted content
     formatted_doc = Document()
 
-    # Loop over each table in the document
-    for table in doc.tables:
-        # Loop over each row in the table, skipping the first row
-        for row_index, row in enumerate(table.rows[1:]):
-            cells = row.cells
-            # Create a string to store the formatted text for the row
-            formatted_text = ""
-            more_information_link = ""
-            title_text = ""
-            for cell_index, cell in enumerate(cells):
-                # Use the cell text as the value
-                value = cell.text
-                # Remove HTML tags
-                value = re.sub(r"<[^>]*>", "", value)
-                header = table.cell(0, cell_index).text
-                # Append the label and value to the formatted text string
-                if header == "Title":
-                    title_text = value
-                elif header == "Deadline":
-                    formatted_text += f"Due Date: {value}\n"
-                elif header == "Amount":
-                    response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",  # Specify the chat model
-                        messages=[
-                            {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                            {"role": "user", "content": f"Summarize the following text by extracting award amount in"
-                                                        f"USD. Is amount upper exists, just use that number is enough."
-                                                        f"Do not include any notes or explanations:\n\n{value}"}
-                        ],
-                        max_tokens=150,  # Set the maximum length for the summary
-                        temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
-                    )
-                    # The response format is different for chat completions
-                    summary = response['choices'][0]['message']['content'].strip()
-                    print(f'extracted amount {summary}')
-                    formatted_text += f"Award Amount: {summary}\n"
-                elif header == "Eligibility":
-                    response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",  # Specify the chat model
-                        messages=[
-                            {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                            {"role": "user", "content": f"Summarize the following text by extracting which level "
-                                                        f"of faculty is eligible. If the level is not mentioned, "
-                                                        f"simply return Any level faculty:\n\n{value}"}
-                        ],
-                        max_tokens=150,  # Set the maximum length for the summary
-                        temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
-                    )
-                    # The response format is different for chat completions
-                    summary = response['choices'][0]['message']['content'].strip()
-                    formatted_text += f"Eligibility: {summary}\n"
-                elif header == "Abstract":
-                    response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",  # Specify the chat model
-                        messages=[
-                            {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                            {"role": "user", "content": f"Summarize the following text in a concise way:\n\n{value}"}
-                        ],
-                        max_tokens=150,  # Set the maximum length for the summary
-                        temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
-                    )
-                    # The response format is different for chat completions
-                    summary = response['choices'][0]['message']['content'].strip()
-                    formatted_text += f"Program Goal: {summary}\n"
-                elif header == "More Information":
-                    more_information_link = value
-            # Add the formatted text to the new Word document
-            p = formatted_doc.add_paragraph()
-            if more_information_link:
-                hyperlink_run = add_hyperlink(p, more_information_link, title_text)
-                hyperlink_run.font.color.rgb = RGBColor(0, 0, 255)
-                hyperlink_run.bold = True
-            else:
-                title_run = p.add_run(title_text)
-                title_run.bold = True
-            p.add_run("\n" + formatted_text.strip())
+    # Iterate over each row in the DataFrame, skipping the first row
+    for _, row in data_frame.iterrows():
+        p = formatted_doc.add_paragraph()
+        
+        # title
+        title_text = f"{row['Funder']} | {row['Title']}"
+        if row['More Information']:
+            hyperlink_run = add_hyperlink(p, row['More Information'], title_text)
+            hyperlink_run.font.color.rgb = RGBColor(0, 0, 255)
+            hyperlink_run.bold = True
+            p.add_run("\n")
+        else:
+            title_run = p.add_run(title_text)
+            title_run.bold = True
+            p.add_run("\n")
+        
+        # Deadline
+        if row['Deadline']:
+            deadline_txt = row['Deadline']
+            bold_run = p.add_run(f"Due Date: ")
+            bold_run.bold = True
+            
+            # Use current date
+            current_date = datetime.now()
+            
+            # Regular expression to find dates in the format "DD MMM YYYY"
+            date_pattern = r"\d{2} \w{3} \d{4}"
+            
+            # Find all dates
+            dates = re.findall(date_pattern, deadline_txt)
+            
+            # Convert found dates to datetime objects and filter out past dates
+            future_dates = [datetime.strptime(date, "%d %b %Y") for date in dates if datetime.strptime(date, "%d %b %Y") > current_date]
+
+            # Find the closest future date
+            closest_future_date = min(future_dates, key=lambda x: (x - current_date))
+
+            # Find the line in the text containing the closest future date
+            closest_date_line = [line for line in deadline_txt.split('\n') if closest_future_date.strftime("%d %b %Y") in line]
+            closest_date = closest_date_line[0] if closest_date_line else "No upcoming date found"
+            p.add_run(f"{closest_date}\n")
+            
+        # Amount
+        if row['Amount']:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",  # Specify the chat model
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                    {"role": "user", "content": f"Summarize the following text by extracting award amount in"
+                                                f"USD. Is amount upper exists, just use that number is enough."
+                                                f"Do not include any notes or explanations:\n\n{row['Amount']}"}
+                ],
+                max_tokens=150,  # Set the maximum length for the summary
+                temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+            )
+            # The response format is different for chat completions
+            summary = response['choices'][0]['message']['content'].strip()
+            bold_run = p.add_run("Award Amount: ")
+            bold_run.bold = True
+            p.add_run(f"{summary}\n")
+
+        # Eligibility
+        if row['Eligibility']:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",  # Specify the chat model
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                    {"role": "user", "content": f"Summarize the following text by extracting which level "
+                                                f"of faculty is eligible. If the level is not mentioned, "
+                                                f"simply return Any level faculty:\n\n{row['Eligibility']}"
+                                                f"also include information if this requires MD or PhD if the information is available"}
+                ],
+                max_tokens=150,  # Set the maximum length for the summary
+                temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+            )
+            # The response format is different for chat completions
+            summary = response['choices'][0]['message']['content'].strip()
+            bold_run = p.add_run("Eligibility: ")
+            bold_run.bold = True
+            p.add_run(f"{summary}\n")
+        
+        
+        # Abstract
+        if row['Abstract']:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",  # Specify the chat model
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                    {"role": "user", "content": f"Summarize the following text in a concise way:\n\n{row['Abstract']}"}
+                ],
+                max_tokens=150,  # Set the maximum length for the summary
+                temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+            )
+            # The response format is different for chat completions
+            summary = response['choices'][0]['message']['content'].strip()
+            bold_run = p.add_run("Program Goal: ")
+            bold_run.bold = True
+            p.add_run(f"{summary}\n")
 
     # Save the formatted Word document
     formatted_doc.save(output_file_path)
@@ -167,18 +170,20 @@ def get_api_key():
     with open(API_KEY_FILE, 'r') as file:
         openai.api_key = file.read().strip()
 
+def unify_line_endings(file_path):
+    with open(file_path, 'r', newline=None) as file:
+        content = file.read().replace('\r\n', '\n').replace('\r', '\n')
+
+    with open(file_path, 'w', newline='\n') as file:
+        file.write(content)
 
 if __name__ == "__main__":
+    file_path = "sample_data/opps_export2.csv"
+    formatted_word_file_path = "output_word/formattedOutput.docx"
+    unify_line_endings(file_path)
     # 1. read csv file
-    file_path = "sample_data/opps_export.csv"
     data_frame = read_csv_file(file_path)
     if data_frame is not None:
-        print(data_frame.head())  # Print first 5 rows of the DataFrame
-
-        # 2. convert csv file to word file
-        word_file_path = "output_word/output.docx"
-        df_to_word(data_frame, word_file_path)
-
-        # 3. format word file
-        formatted_word_file_path = "output_word/formattedOutput.docx"
-        format_word_file(word_file_path, formatted_word_file_path)
+        # 2. convert csv file to word file and format word file
+        format_word_file(data_frame, formatted_word_file_path)
+    
