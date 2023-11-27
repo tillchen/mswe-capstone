@@ -6,7 +6,8 @@ def import_file():
     print(f"Imported file: {file_path}")
 
 def export_file():
-    file_path = filedialog.asksaveasfilename()
+    default_name = filename_entry.get() + ".docx"
+    file_path = filedialog.asksaveasfilename(defaultextension=".docx", initialfile=default_name)
     print(f"Exported file: {file_path}")
 
 # Create the main window
@@ -17,6 +18,10 @@ root.geometry("400x200")  # Adjust the size as needed
 # Create a label for status messages
 status_label = tk.Label(root, text="Please upload your file", height=2)
 status_label.pack(pady=5)
+
+# Create an Entry widget for the filename
+filename_entry = tk.Entry(root)
+filename_entry.pack(pady=5)
 
 # Create a frame to hold the buttons
 button_frame = tk.Frame(root)
