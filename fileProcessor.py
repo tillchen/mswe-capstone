@@ -47,7 +47,7 @@ def format_word_file(data_frame, output_file_path):
     # Iterate over each row in the DataFrame, skipping the first row
     for _, row in data_frame.iterrows():
         p = formatted_doc.add_paragraph()
-        
+
         # title
         title_text = f"{row['Funder']} | {row['Title']}"
         if row['More Information']:
@@ -59,22 +59,22 @@ def format_word_file(data_frame, output_file_path):
             title_run = p.add_run(title_text)
             title_run.bold = True
             p.add_run("\n")
-        
+
         # Deadline
         if row['Deadline']:
             deadline_txt = row['Deadline']
             bold_run = p.add_run(f"Due Date: ")
             bold_run.bold = True
-            
+
             # Use current date
             current_date = datetime.now()
-            
+
             # Regular expression to find dates in the format "DD MMM YYYY"
             date_pattern = r"\d{2} \w{3} \d{4}"
-            
+
             # Find all dates
             dates = re.findall(date_pattern, deadline_txt)
-            
+
             # Convert found dates to datetime objects and filter out past dates
             future_dates = [datetime.strptime(date, "%d %b %Y") for date in dates if datetime.strptime(date, "%d %b %Y") > current_date]
 
@@ -85,60 +85,82 @@ def format_word_file(data_frame, output_file_path):
             closest_date_line = [line for line in deadline_txt.split('\n') if closest_future_date.strftime("%d %b %Y") in line]
             closest_date = closest_date_line[0] if closest_date_line else "No upcoming date found"
             p.add_run(f"{closest_date}\n")
-            
+
         # Amount
         if row['Amount']:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",  # Specify the chat model
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                    {"role": "user", "content": f"Summarize the following text by extracting award amount in"
+            amount = row['Amount']
+            print(f'Summarizing amount: {amount}')
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",  # Specify the chat model
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                        {"role": "user", "content": f"Summarize the following text by extracting award amount in"
                                                 f"USD. Is amount upper exists, just use that number is enough."
-                                                f"Do not include any notes or explanations:\n\n{row['Amount']}"}
-                ],
-                max_tokens=150,  # Set the maximum length for the summary
-                temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
-            )
-            # The response format is different for chat completions
-            summary = response['choices'][0]['message']['content'].strip()
+                                                f"Do not include any notes or explanations:\n\n{amount}"}
+                    ],
+                    max_tokens=150,  # Set the maximum length for the summary
+                    temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+                )
+                # The response format is different for chat completions
+                summary = response['choices'][0]['message']['content'].strip()
+                print(f'Summarized amount: {summary}')
+            except Exception as e:
+                print(f"API call failed for amount: {e}")
+                summary = amount
             bold_run = p.add_run("Award Amount: ")
             bold_run.bold = True
             p.add_run(f"{summary}\n")
 
         # Eligibility
         if row['Eligibility']:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",  # Specify the chat model
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                    {"role": "user", "content": f"Summarize the following text by extracting which level "
+            eligibility = row['Eligibility']
+            print(f'Summarizing eligibility: {eligibility}')
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",  # Specify the chat model
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                        {"role": "user", "content": f"Summarize the following text by extracting which level "
                                                 f"of faculty is eligible. If the level is not mentioned, "
-                                                f"simply return Any level faculty:\n\n{row['Eligibility']}"
-                                                f"also include information if this requires MD or PhD if the information is available"}
-                ],
-                max_tokens=150,  # Set the maximum length for the summary
-                temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
-            )
+                                                f"simply return Any level faculty"
+                                                f"also include information if this requires MD or PhD if the "
+                                                f"information is available. Do not include any notes or explanations:"
+                                                f" \n\n{eligibility}"}
+                    ],
+                    max_tokens=150,  # Set the maximum length for the summary
+                    temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+                )
+                summary = response['choices'][0]['message']['content'].strip()
+                print(f'Summarized eligibility: {summary}')
+            except Exception as e:
+                print(f"API call failed for Eligibility: {e}")
+                summary = eligibility
             # The response format is different for chat completions
-            summary = response['choices'][0]['message']['content'].strip()
             bold_run = p.add_run("Eligibility: ")
             bold_run.bold = True
             p.add_run(f"{summary}\n")
-        
-        
+
         # Abstract
         if row['Abstract']:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",  # Specify the chat model
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                    {"role": "user", "content": f"Summarize the following text in a concise way:\n\n{row['Abstract']}"}
-                ],
-                max_tokens=150,  # Set the maximum length for the summary
-                temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
-            )
-            # The response format is different for chat completions
-            summary = response['choices'][0]['message']['content'].strip()
+            abstract = row['Abstract']
+            print(f'Summarizing abstract: {abstract}')
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",  # Specify the chat model
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
+                        {"role": "user", "content": f"Summarize the following text in a concise way:\n\n{abstract}"}
+                    ],
+                    max_tokens=150,  # Set the maximum length for the summary
+                    temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.
+                )
+                # The response format is different for chat completions
+                summary = response['choices'][0]['message']['content'].strip()
+                print(f'Summarized abstract: {summary}')
+            except Exception as e:
+                print(f"API call failed for Abstract: {e}")
+                summary = abstract
             bold_run = p.add_run("Program Goal: ")
             bold_run.bold = True
             p.add_run(f"{summary}\n")
@@ -178,7 +200,7 @@ def unify_line_endings(file_path):
         file.write(content)
 
 if __name__ == "__main__":
-    file_path = "sample_data/opps_export2.csv"
+    file_path = "sample_data/opps_export.csv"
     formatted_word_file_path = "output_word/formattedOutput.docx"
     unify_line_endings(file_path)
     # 1. read csv file
@@ -186,4 +208,3 @@ if __name__ == "__main__":
     if data_frame is not None:
         # 2. convert csv file to word file and format word file
         format_word_file(data_frame, formatted_word_file_path)
-    
