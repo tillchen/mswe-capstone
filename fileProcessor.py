@@ -2,7 +2,8 @@ import pandas as pd
 import docx.oxml.ns as ns
 from docx import Document
 import re
-from docx.shared import RGBColor
+from docx.shared import RGBColor, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import docx.oxml as oxml
 import openai
 from datetime import datetime
@@ -38,11 +39,19 @@ def remove_html_tag(value):
     return value
 
 # 2. convert csv file to word file and format word file
-def format_word_file(data_frame, output_file_path):
+def format_word_file(data_frame, head_title):
     get_api_key()
 
     # Create a new Word document for the formatted content
     formatted_doc = Document()
+    
+    # Add head_title as the first line, centered and bold
+    if head_title:
+        title = formatted_doc.add_paragraph(head_title)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_run = title.runs[0]
+        title_run.bold = True
+        title_run.font.size = Pt(14)
 
     # Iterate over each row in the DataFrame, skipping the first row
     for _, row in data_frame.iterrows():
@@ -166,6 +175,11 @@ def format_word_file(data_frame, output_file_path):
             p.add_run(f"{summary}\n")
 
     # Save the formatted Word document
+    # formatted_doc.save(output_file_path)
+    return formatted_doc
+
+def save_file(formatted_doc, output_file_path):
+    # Save the formatted Word document
     formatted_doc.save(output_file_path)
 
 # Helper functions:
@@ -198,13 +212,18 @@ def unify_line_endings(file_path):
 
     with open(file_path, 'w', newline='\n') as file:
         file.write(content)
+        
+def file_process(file_path, head_title):
+    unify_line_endings(file_path)
+    # 1. read csv file
+    data_frame = read_csv_file(file_path)
+    # 2. convert csv file to word file and format word file
+    formatted_doc = format_word_file(data_frame, head_title)
+    return formatted_doc
 
 if __name__ == "__main__":
     file_path = "sample_data/opps_export.csv"
     formatted_word_file_path = "output_word/formattedOutput.docx"
-    unify_line_endings(file_path)
-    # 1. read csv file
-    data_frame = read_csv_file(file_path)
-    if data_frame is not None:
-        # 2. convert csv file to word file and format word file
-        format_word_file(data_frame, formatted_word_file_path)
+    head_title = "test"
+    formatted_doc = file_process(file_path, head_title)
+    save_file(formatted_doc, formatted_word_file_path)
