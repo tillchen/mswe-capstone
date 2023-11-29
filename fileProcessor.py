@@ -222,8 +222,8 @@ def file_process(file_path, head_title):
     return formatted_doc
 
 if __name__ == "__main__":
-    file_path = "sample_data/opps_export.csv"
-    formatted_word_file_path = "output_word/formattedOutput.docx"
+    file_path = "sample_data/opps_export1.csv"
+    formatted_word_file_path = "output_word/formattedOutput1.docx"
     head_title = "test"
     formatted_doc = file_process(file_path, head_title)
     save_file(formatted_doc, formatted_word_file_path)
