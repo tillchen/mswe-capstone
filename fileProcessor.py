@@ -11,6 +11,8 @@ import docx.oxml as oxml
 import openai
 from datetime import datetime
 
+from pandas import NaT
+
 API_KEY_FILE = 'apikey.txt'
 
 # 1. read csv file
@@ -83,8 +85,10 @@ def format_word_file(data_frame, head_title):
             bold_run.bold = True
             closest_future_date = row['ClosestFutureDate']
 
-            # Find the line in the text containing the closest future date
-            closest_date_line = [line for line in deadline_txt.split('\n') if closest_future_date.strftime("%d %b %Y") in line]
+            # Find the line in the text containing the closest future
+            closest_date_line = [line for line in deadline_txt.split('\n')
+                                 if closest_future_date is not NaT and
+                                 closest_future_date.strftime("%d %b %Y") in line]
             closest_date = closest_date_line[0] if closest_date_line else "No upcoming date found"
             p.add_run(f"{closest_date}\n")
 
