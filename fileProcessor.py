@@ -123,8 +123,14 @@ def format_word_file(data_frame, head_title):
                         {"role": "user", "content": f"Summarize the following text by extracting which level "
                                                 f"of faculty is eligible. If the level is not mentioned, "
                                                 f"simply return Any level faculty"
-                                                f"also include information if this requires MD or PhD if the "
-                                                f"information is available. Do not include any notes or explanations:"
+                                                f"Also include information if this requires MD or PhD if the "
+                                                f"information is available. Include the tenure information "
+                                                    f"as well."
+                                                    f" Don’t add any prefix like ‘Eligible faculty level:’."
+                                                    f"Do not include any notes or explanations. And do not say things like:"
+                                                    f"'MD or PhD is not mentioned. Tenure information is not provided.'"
+                                                    f"Please be concise: "
+                                                
                                                 f" \n\n{eligibility}"}
                     ],
                     max_tokens=150,  # Set the maximum length for the summary
@@ -149,7 +155,10 @@ def format_word_file(data_frame, head_title):
                     model="gpt-3.5-turbo",  # Specify the chat model
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant who's good at summarization."},
-                        {"role": "user", "content": f"Summarize the following text in a concise way:\n\n{abstract}"}
+                        {"role": "user", "content": f"Summarize the following text in a concise way."
+                                                    f"Don’t do the explanation on the foundation itself. Must include "
+                                                    f"the specific type of research. Don’t repeat the eligibility nor "
+                                                    f"include the budget:\n\n{abstract}"}
                     ],
                     max_tokens=150,  # Set the maximum length for the summary
                     temperature=0.7  # Adjusts randomness in the response. Lower is more deterministic.

@@ -16,6 +16,8 @@ We call our software "AutoGranter".
 
 ## How to run the script
 
+Python 3.11.4 and above is required.
+
 First time:
 
 ```sh
