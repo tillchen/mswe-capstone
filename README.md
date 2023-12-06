@@ -39,6 +39,15 @@ source myenv/bin/activate
 deactivate
 ```
 
+How to package the program:
+
+macOS:
+
+```shell
+pip install pyinstaller
+pyinstaller --onefile --add-data 'apikey.txt:.'  GUI.py         
+```
+
 ## Tech Stack
 
 1. Python: Core programming language for backend development and data manipulation.
