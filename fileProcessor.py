@@ -53,6 +53,10 @@ def format_word_file(data_frame, head_title):
         title_run.bold = True
         title_run.font.size = Pt(14)
 
+    data_frame['ClosestFutureDate'] = data_frame['Deadline'].apply(extract_closest_future_date)
+    # Sort the Deadline
+    data_frame = data_frame.sort_values(by='ClosestFutureDate')
+    
     # Iterate over each row in the DataFrame, skipping the first row
     for _, row in data_frame.iterrows():
         p = formatted_doc.add_paragraph()
@@ -74,21 +78,7 @@ def format_word_file(data_frame, head_title):
             deadline_txt = row['Deadline']
             bold_run = p.add_run(f"Due Date: ")
             bold_run.bold = True
-
-            # Use current date
-            current_date = datetime.now()
-
-            # Regular expression to find dates in the format "DD MMM YYYY"
-            date_pattern = r"\d{2} \w{3} \d{4}"
-
-            # Find all dates
-            dates = re.findall(date_pattern, deadline_txt)
-
-            # Convert found dates to datetime objects and filter out past dates
-            future_dates = [datetime.strptime(date, "%d %b %Y") for date in dates if datetime.strptime(date, "%d %b %Y") > current_date]
-
-            # Find the closest future date
-            closest_future_date = min(future_dates, key=lambda x: (x - current_date))
+            closest_future_date = row['ClosestFutureDate']
 
             # Find the line in the text containing the closest future date
             closest_date_line = [line for line in deadline_txt.split('\n') if closest_future_date.strftime("%d %b %Y") in line]
@@ -202,6 +192,18 @@ def add_hyperlink(paragraph, url, text):
 
     return r
 
+def extract_closest_future_date(deadline_txt):
+    if deadline_txt:
+        current_date = datetime.now()
+        date_pattern = r"\d{2} \w{3} \d{4}"
+        dates = re.findall(date_pattern, deadline_txt)
+        future_dates = [datetime.strptime(date, "%d %b %Y") for date in dates if datetime.strptime(date, "%d %b %Y") > current_date]
+
+        if future_dates:
+            return min(future_dates, key=lambda x: (x - current_date))
+    return None
+
+
 def get_api_key():
     with open(API_KEY_FILE, 'r') as file:
         openai.api_key = file.read().strip()
@@ -218,12 +220,15 @@ def file_process(file_path, head_title):
     # 1. read csv file
     data_frame = read_csv_file(file_path)
     # 2. convert csv file to word file and format word file
-    formatted_doc = format_word_file(data_frame, head_title)
-    return formatted_doc
+    if data_frame is not None:
+        formatted_doc = format_word_file(data_frame, head_title)
+        return formatted_doc
+    else:
+        raise ValueError("No data found in the file")
 
 if __name__ == "__main__":
-    file_path = "sample_data/opps_export1.csv"
-    formatted_word_file_path = "output_word/formattedOutput1.docx"
+    file_path = "sample_data/opps_export.csv"
+    formatted_word_file_path = "output_word/formattedOutput.docx"
     head_title = "test"
     formatted_doc = file_process(file_path, head_title)
     save_file(formatted_doc, formatted_word_file_path)
