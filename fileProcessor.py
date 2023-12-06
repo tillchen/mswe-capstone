@@ -1,3 +1,6 @@
+import os
+import sys
+
 import pandas as pd
 import docx.oxml.ns as ns
 from docx import Document
@@ -212,9 +215,13 @@ def extract_closest_future_date(deadline_txt):
             return min(future_dates, key=lambda x: (x - current_date))
     return None
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 def get_api_key():
-    with open(API_KEY_FILE, 'r') as file:
+    with open(resource_path(API_KEY_FILE), 'r') as file:
         openai.api_key = file.read().strip()
 
 def unify_line_endings(file_path):
