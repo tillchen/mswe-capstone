@@ -229,10 +229,10 @@ def get_api_key():
         openai.api_key = file.read().strip()
 
 def unify_line_endings(file_path):
-    with open(file_path, 'r', newline=None) as file:
+    with open(file_path, 'r', encoding='utf-8', newline=None) as file:
         content = file.read().replace('\r\n', '\n').replace('\r', '\n')
 
-    with open(file_path, 'w', newline='\n') as file:
+    with open(file_path, 'w', encoding='utf-8', newline='\n') as file:
         file.write(content)
         
 def file_process(file_path, head_title):
