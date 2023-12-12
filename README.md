@@ -47,6 +47,13 @@ macOS:
 pip install pyinstaller
 pyinstaller --onefile --add-data 'apikey.txt:.'  GUI.py         
 ```
+## macOS Issue
+
+If you can't open the executable on macOS, make sure you downloaded the correct version (Apple Silicon vs Intel). And then make sure you are allowing thrid-party developers with this command in the terminal:
+
+```shell
+sudo spctl --master-disable
+```
 
 ## Tech Stack
 
